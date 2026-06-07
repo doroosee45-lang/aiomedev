@@ -1,75 +1,106 @@
+/**
+ * OMEDEV-AI — Proxy Génération Documents vers Backend
+ * Frontend → /api/generate → Backend :5000/api/documents/generate
+ */
 import { NextRequest } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
 
-const DOCUMENT_PROMPTS: Record<string, string> = {
-  contrat: `Tu es un juriste expert en droit OHADA et droit congolais (RDC).
-Rédige un contrat professionnel complet et conforme au droit applicable.
-Inclus: parties, objet, conditions, obligations, durée, résiliation, juridiction compétente (OHADA).
-Format: Markdown structuré avec numérotation d'articles.`,
-
-  rapport: `Tu es un consultant professionnel expert en rédaction de rapports.
-Rédige un rapport complet et structuré.
-Inclus: résumé exécutif, contexte, analyse, conclusions, recommandations.
-Format: Markdown professionnel avec sections claires.`,
-
-  proposition: `Tu es un expert en business development.
-Rédige une proposition commerciale professionnelle et convaincante.
-Inclus: présentation OMEDEV SERVICES, problématique client, solution proposée, tarification, prochaines étapes.
-Format: Markdown structuré, ton professionnel.`,
-
-  'cahier-charges': `Tu es un architecte logiciel senior.
-Rédige un cahier des charges technique complet.
-Inclus: contexte, objectifs, spécifications fonctionnelles et techniques, architecture, planning, budget.
-Format: Markdown structuré avec sections détaillées.`,
-}
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000'
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { type = 'rapport', context, title, language = 'fr' } = body
+    const { type, templateId, context, title, language = 'fr', data } = body
 
-    if (!context) {
-      return Response.json({ error: 'Contexte requis' }, { status: 400 })
+    // Mapper les anciens types vers les nouveaux
+    const typeMap: Record<string, string> = {
+      'cahier-charges': 'cdc',
+      'contrat': 'contract_sarl',
+      'rapport': 'report',
+      'proposition': 'business_proposal',
+      'invoice': 'invoice',
+      'letter': 'report',
     }
 
-    const systemPrompt = DOCUMENT_PROMPTS[type] || DOCUMENT_PROMPTS.rapport
+    const resolvedType = typeMap[type] || type || templateId || 'report'
 
-    const response = await client.messages.create({
-      model: 'claude-opus-4-8',
-      max_tokens: 8000,
-      system: `${systemPrompt}
+    // Données à envoyer au backend
+    const payload = {
+      type: resolvedType,
+      templateId: resolvedType,
+      title: title || `Document — ${resolvedType}`,
+      data: data || {
+        nomProjet: title,
+        contexte: context,
+        client: 'Client OMEDEV',
+        language,
+      },
+    }
 
-Langue: ${language === 'fr' ? 'Français' : language === 'en' ? 'English' : 'Lingala/Français'}
-Entreprise: OMEDEV SERVICES SARL — 75, avenue Kabambare, Kinshasa, RDC
-Date: ${new Date().toLocaleDateString('fr-FR')}`,
-      messages: [
-        {
-          role: 'user',
-          content: `Génère un document de type "${type}" avec les informations suivantes:\n\nTitre: ${title || 'Document OMEDEV'}\n\nContexte et contenu:\n${context}`,
-        },
-      ],
+    const backendRes = await fetch(`${BACKEND_URL}/api/documents/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     })
 
-    const content = response.content[0]
-    const documentContent = content.type === 'text' ? content.text : ''
+    if (!backendRes.ok) {
+      // Fallback: générer via le chat agent
+      const chatRes = await fetch(`${BACKEND_URL}/api/agent/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{
+            role: 'user',
+            content: `Génère un document professionnel de type "${resolvedType}" avec le titre "${title || 'Document'}".\n\nContexte:\n${context || 'À définir'}\n\nFormat: Markdown complet, professionnel, conforme aux standards OHADA/RDC.`
+          }],
+          mode: resolvedType === 'cdc' ? 'cahier' : resolvedType === 'report' ? 'analyst' : 'legal',
+          language,
+        }),
+      })
 
+      // Collecter le stream
+      let content = ''
+      const reader = chatRes.body?.getReader()
+      if (reader) {
+        const decoder = new TextDecoder()
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const lines = decoder.decode(value).split('\n')
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            try {
+              const d = JSON.parse(line.slice(6))
+              if (d.type === 'text') content += d.content
+            } catch { /* skip */ }
+          }
+        }
+      }
+
+      return Response.json({
+        success: true,
+        content,
+        type: resolvedType,
+        title: title || `Document ${resolvedType}`,
+        generatedAt: new Date().toISOString(),
+      })
+    }
+
+    const result = await backendRes.json()
     return Response.json({
       success: true,
-      content: documentContent,
-      type,
-      title: title || `Document ${type} - OMEDEV SERVICES`,
+      content: result.data?.content || result.content || '',
+      type: resolvedType,
+      title: title || `Document ${resolvedType}`,
       generatedAt: new Date().toISOString(),
-      tokens: response.usage,
+      tokens: result.data?.wordCount || 0,
     })
   } catch (error) {
-    console.error('Generate API error:', error)
+    console.error('Generate proxy error:', error)
     return Response.json(
-      { error: 'Erreur lors de la génération du document' },
+      { error: `Erreur: ${error instanceof Error ? error.message : 'Erreur inconnue'}. Vérifiez que le backend est démarré.` },
       { status: 500 }
     )
   }
@@ -77,7 +108,8 @@ Date: ${new Date().toLocaleDateString('fr-FR')}`,
 
 export async function GET() {
   return Response.json({
-    status: 'OMEDEV-AI Document Generation API',
-    types: ['contrat', 'rapport', 'proposition', 'cahier-charges', 'invoice', 'letter'],
+    status: 'OMEDEV-AI Document Generation Proxy',
+    backend: BACKEND_URL,
+    types: ['cdc', 'spec_technique', 'architecture', 'user_stories', 'contrat', 'rapport', 'proposition', 'invoice'],
   })
 }

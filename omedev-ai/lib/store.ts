@@ -84,7 +84,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   streamResponse: true,
   autoSave: true,
   defaultMode: 'general',
-  defaultModel: 'claude-opus-4-8',
+  defaultModel: 'ollama',   // IA locale — backend Ollama en priorité
   maxTokens: 32000,
   notifications: true,
   sound: false,

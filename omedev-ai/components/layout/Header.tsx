@@ -23,14 +23,31 @@ const DocumentGenerator = lazy(() =>
   import('@/components/ui/DocumentGenerator').then((m) => ({ default: m.DocumentGenerator }))
 )
 
-const MODE_COLORS: Record<ConversationMode, string> = {
-  general: 'bg-omedev-green/10 text-omedev-green border-omedev-green/30',
-  code: 'bg-blue-500/10 text-blue-400 border-blue-400/30',
-  legal: 'bg-purple-500/10 text-purple-400 border-purple-400/30',
-  formation: 'bg-yellow-500/10 text-yellow-400 border-yellow-400/30',
-  analyst: 'bg-emerald-500/10 text-emerald-400 border-emerald-400/30',
-  autonomous: 'bg-red-500/10 text-red-400 border-red-400/30',
+const MODE_COLORS: Partial<Record<ConversationMode, string>> = {
+  general:       'bg-omedev-green/10 text-omedev-green border-omedev-green/30',
+  code:          'bg-blue-500/10 text-blue-400 border-blue-400/30',
+  legal:         'bg-purple-500/10 text-purple-400 border-purple-400/30',
+  formation:     'bg-yellow-500/10 text-yellow-400 border-yellow-400/30',
+  analyst:       'bg-emerald-500/10 text-emerald-400 border-emerald-400/30',
+  autonomous:    'bg-red-500/10 text-red-400 border-red-400/30',
+  telecom:       'bg-violet-500/10 text-violet-400 border-violet-400/30',
+  reseaux:       'bg-cyan-500/10 text-cyan-400 border-cyan-400/30',
+  maintenance:   'bg-amber-500/10 text-amber-400 border-amber-400/30',
+  sciences:      'bg-pink-500/10 text-pink-400 border-pink-400/30',
+  programmation: 'bg-green-500/10 text-green-400 border-green-400/30',
+  strategie:     'bg-orange-500/10 text-orange-400 border-orange-400/30',
+  devops:        'bg-blue-600/10 text-blue-400 border-blue-400/30',
+  security:      'bg-red-600/10 text-red-400 border-red-400/30',
+  data:          'bg-teal-500/10 text-teal-400 border-teal-400/30',
+  business:      'bg-yellow-600/10 text-yellow-400 border-yellow-400/30',
+  agent:         'bg-orange-500/10 text-orange-400 border-orange-400/30',
+  conception:    'bg-sky-500/10 text-sky-400 border-sky-400/30',
+  cahier:        'bg-indigo-500/10 text-indigo-400 border-indigo-400/30',
+  architecture:  'bg-cyan-600/10 text-cyan-400 border-cyan-400/30',
+  planification: 'bg-lime-500/10 text-lime-400 border-lime-400/30',
 }
+
+const DEFAULT_MODE_COLOR = 'bg-omedev-green/10 text-omedev-green border-omedev-green/30'
 
 export function Header() {
   const {
@@ -97,7 +114,7 @@ export function Header() {
           }}
           className={cn(
             'mode-badge cursor-pointer hover:opacity-90 transition-opacity',
-            MODE_COLORS[currentMode as ConversationMode] || MODE_COLORS.general
+            MODE_COLORS[currentMode as ConversationMode] || DEFAULT_MODE_COLOR
           )}
         >
           <span>{modeConfig?.icon}</span>

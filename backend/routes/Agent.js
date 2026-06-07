@@ -7,6 +7,69 @@ import { detectDomains } from '../services/knowledgeBase.js';
 
 const router = express.Router();
 
+// ── POST /api/agent/chat (streaming SSE) ───────────
+// Endpoint principal connecté au frontend Next.js
+router.post('/chat', async (req, res) => {
+  try {
+    const { messages = [], mode = 'general', model, language = 'fr', agent } = req.body;
+    if (!messages.length) return res.status(400).json({ error: 'Messages requis' });
+
+    // SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
+    res.flushHeaders();
+
+    const send = (obj) => res.write(`data: ${JSON.stringify(obj)}\n\n`);
+
+    // Extraire le dernier message user
+    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+    if (!lastUserMsg) { send({ type: 'error', error: 'Aucun message utilisateur' }); return res.end(); }
+
+    // Historique (tout sauf le dernier)
+    const conversationHistory = messages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
+
+    // Résoudre le mode — si agent, mapper vers un mode backend
+    const agentToMode = { devops: 'devops', security: 'security', data: 'data', formation: 'formation', business: 'business', legal: 'legal', web: 'general' };
+    const resolvedMode = agent ? (agentToMode[agent] || 'general') : (mode || 'general');
+
+    send({ type: 'start', model: model || 'ollama' });
+
+    let accumulated = '';
+    const result = await processAgentRequest({
+      message: lastUserMsg.content,
+      conversationHistory,
+      mode: resolvedMode,
+      model,
+      language,
+      stream: true,
+      onChunk: (chunk) => {
+        accumulated += chunk;
+        send({ type: 'text', content: chunk });
+      },
+      enableTools: true,
+    });
+
+    // Si engine demo ou non-streaming, envoyer d'un coup
+    if (!accumulated && result.content) {
+      const words = result.content.split(/(\s+)/);
+      for (const word of words) {
+        send({ type: 'text', content: word });
+      }
+    }
+
+    send({ type: 'done', engine: result.engine, model: result.model, tokens: result.tokens, domains: result.domains });
+    res.end();
+  } catch (err) {
+    try {
+      res.write(`data: ${JSON.stringify({ type: 'error', error: err.message })}\n\n`);
+      res.end();
+    } catch { /* client disconnected */ }
+  }
+});
+
 // ── POST /api/agent/execute ─────────────────────────
 router.post('/execute', protect, async (req, res) => {
   try {

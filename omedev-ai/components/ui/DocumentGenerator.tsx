@@ -11,12 +11,16 @@ interface DocumentGeneratorProps {
 }
 
 const DOC_TYPES = [
-  { id: 'contrat', label: '📜 Contrat', description: 'Contrat OHADA/RDC' },
-  { id: 'rapport', label: '📊 Rapport', description: 'Rapport professionnel' },
-  { id: 'proposition', label: '💼 Proposition', description: 'Offre commerciale' },
-  { id: 'cahier-charges', label: '📋 Cahier des charges', description: 'Spécifications techniques' },
-  { id: 'invoice', label: '🧾 Facture', description: 'Facture proforma' },
-  { id: 'letter', label: '✉️ Lettre', description: 'Correspondance officielle' },
+  // ── Conception (backend documentGenerator.js) ──
+  { id: 'cdc',            label: '📋 Cahier des Charges',    description: 'CDC complet 15 sections (OHADA/RDC)', group: 'Conception' },
+  { id: 'spec_technique', label: '⚙️ Spec Technique',        description: 'Architecture, API, BDD, sécurité, CI/CD', group: 'Conception' },
+  { id: 'architecture',   label: '🏗️ Document Architecture', description: 'C4, ADR, composants, scalabilité', group: 'Conception' },
+  { id: 'user_stories',   label: '📝 User Stories',          description: 'Stories Gherkin avec critères d\'acceptation', group: 'Conception' },
+  // ── Juridique & Business (via IA agent) ──
+  { id: 'contrat',        label: '📜 Contrat',               description: 'Contrat OHADA/RDC', group: 'Juridique' },
+  { id: 'rapport',        label: '📊 Rapport',               description: 'Rapport professionnel', group: 'Juridique' },
+  { id: 'proposition',    label: '💼 Proposition',           description: 'Offre commerciale', group: 'Juridique' },
+  { id: 'invoice',        label: '🧾 Facture',               description: 'Facture proforma OHADA', group: 'Juridique' },
 ]
 
 export function DocumentGenerator({ onClose }: DocumentGeneratorProps) {
@@ -86,12 +90,14 @@ export function DocumentGenerator({ onClose }: DocumentGeneratorProps) {
             </div>
             <div>
               <h2 className="font-bold text-foreground">Générateur de Documents</h2>
-              <p className="text-xs text-muted-foreground">Powered by Claude Opus 4.8</p>
+              <p className="text-xs text-muted-foreground">OMEDEV-AI — Ollama local · Claude fallback</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
+            title="Fermer"
+            aria-label="Fermer le générateur de documents"
             className="p-2 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-colors"
           >
             <X size={18} />
@@ -106,21 +112,29 @@ export function DocumentGenerator({ onClose }: DocumentGeneratorProps) {
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                 Type de document
               </label>
-              <div className="grid grid-cols-1 gap-1.5">
-                {DOC_TYPES.map((type) => (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => setDocType(type.id)}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs transition-all',
-                      docType === type.id
-                        ? 'bg-omedev-green/10 border border-omedev-green/30 text-foreground'
-                        : 'hover:bg-accent text-muted-foreground border border-transparent'
-                    )}
-                  >
-                    <span>{type.label}</span>
-                  </button>
+              <div className="space-y-2">
+                {(['Conception', 'Juridique'] as const).map((group) => (
+                  <div key={group}>
+                    <p className="text-xs text-muted-foreground/60 uppercase tracking-wider mb-1 px-1">{group}</p>
+                    <div className="grid grid-cols-1 gap-1">
+                      {DOC_TYPES.filter((t) => t.group === group).map((type) => (
+                        <button
+                          key={type.id}
+                          type="button"
+                          onClick={() => setDocType(type.id)}
+                          title={type.description}
+                          className={cn(
+                            'flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs transition-all',
+                            docType === type.id
+                              ? 'bg-omedev-green/10 border border-omedev-green/30 text-foreground'
+                              : 'hover:bg-accent text-muted-foreground border border-transparent'
+                          )}
+                        >
+                          <span>{type.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -147,6 +161,8 @@ export function DocumentGenerator({ onClose }: DocumentGeneratorProps) {
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
+                title="Choisir la langue du document"
+                aria-label="Langue du document"
                 className="omedev-input text-xs"
               >
                 <option value="fr">🇫🇷 Français</option>

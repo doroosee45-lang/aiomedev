@@ -24,13 +24,28 @@ const SettingsModal = lazy(() =>
   import('@/components/ui/SettingsModal').then((m) => ({ default: m.SettingsModal }))
 )
 
-const MODE_ICONS: Record<ConversationMode, string> = {
+const MODE_ICONS: Partial<Record<ConversationMode, string>> = {
   general: '💬',
   code: '💻',
   legal: '⚖️',
   formation: '🎓',
   analyst: '📊',
   autonomous: '🤖',
+  telecom: '📡',
+  reseaux: '🌐',
+  maintenance: '🔧',
+  sciences: '🔬',
+  programmation: '⌨️',
+  strategie: '🚀',
+  devops: '⚙️',
+  security: '🔒',
+  data: '📊',
+  business: '💼',
+  agent: '🤖',
+  conception: '🎨',
+  cahier: '📋',
+  architecture: '🏗️',
+  planification: '📅',
 }
 
 export function Sidebar() {

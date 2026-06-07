@@ -4,22 +4,37 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/lib/store'
 import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
-import { estimateTokens, generateId } from '@/lib/utils'
+
 import type { Attachment, ConversationMode } from '@/types'
 import { CONVERSATION_MODES } from '@/types'
-import { Bot, MessageSquare, Zap, Code2, Scale, GraduationCap, BarChart2, Cpu } from 'lucide-react'
+import { Bot, Zap, Code2, Scale, GraduationCap, BarChart2, Cpu, Radio, Network, Wrench, FlaskConical, Terminal, Layers, Shield, Database, Briefcase, Palette, FileText, Building2, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-const MODE_ICONS: Record<ConversationMode, React.ComponentType<{ size?: number; className?: string }>> = {
+const MODE_ICONS: Partial<Record<ConversationMode, React.ComponentType<{ size?: number; className?: string }>>> = {
   general: Bot,
   code: Code2,
   legal: Scale,
   formation: GraduationCap,
   analyst: BarChart2,
   autonomous: Cpu,
+  telecom: Radio,
+  reseaux: Network,
+  maintenance: Wrench,
+  sciences: FlaskConical,
+  programmation: Terminal,
+  strategie: Zap,
+  devops: Layers,
+  security: Shield,
+  data: Database,
+  business: Briefcase,
+  agent: Bot,
+  conception: Palette,
+  cahier: FileText,
+  architecture: Building2,
+  planification: Calendar,
 }
 
-const WELCOME_SUGGESTIONS: Record<ConversationMode, string[]> = {
+const WELCOME_SUGGESTIONS: Partial<Record<ConversationMode, string[]>> = {
   general: [
     'Qu\'est-ce que l\'OHADA et comment affecte-t-il les entreprises en RDC ?',
     'Explique-moi les bases du Cloud Computing',
@@ -56,6 +71,96 @@ const WELCOME_SUGGESTIONS: Record<ConversationMode, string[]> = {
     'Génère et exécute des tests unitaires pour ce code',
     'Analyse et refactorise ce codebase selon les bonnes pratiques',
   ],
+  conception: [
+    'Conçois une application de gestion de flotte pour une entreprise à Kinshasa',
+    'Propose une architecture pour un système de Mobile Money',
+    'Crée le schéma de base de données pour une app e-commerce africaine',
+    'Quelle stack technique pour un SaaS avec 10 000 utilisateurs ?',
+  ],
+  cahier: [
+    'Génère un cahier des charges pour une application RH complète',
+    'Rédige les spécifications d\'une plateforme de formation en ligne',
+    'Crée le CDC pour un système de gestion d\'inventaire',
+    'Quelles sont les sections obligatoires d\'un CDC professionnel ?',
+  ],
+  architecture: [
+    'Conçois une architecture microservices pour une fintech africaine',
+    'Propose un pattern Clean Architecture pour une API Node.js',
+    'Quelle architecture pour une app qui supporte 100 000 users ?',
+    'Compare monolithe vs microservices pour mon projet',
+  ],
+  planification: [
+    'Crée un plan de projet Scrum sur 3 mois pour une app mobile',
+    'Génère le WBS et Gantt pour un projet de développement web',
+    'Comment prioriser les user stories avec MoSCoW ?',
+    'Planifie un sprint de 2 semaines avec 4 développeurs',
+  ],
+  telecom: [
+    'Calcule le bilan de liaison pour un lien 4G LTE à 2600 MHz sur 5 km',
+    'Explique l\'architecture 5G NR de bout en bout',
+    'Quelles fréquences utilise Vodacom Congo en LTE ?',
+    'Comment configurer un trunk SIP avec Asterisk ?',
+  ],
+  reseaux: [
+    'Configure OSPF multi-area sur un routeur Cisco',
+    'Calcule les sous-réseaux pour 192.168.10.0/24 avec VLSM',
+    'Explique BGP et ses attributs de sélection de chemin',
+    'Comment configurer un VPN IPsec site-à-site sur pfSense ?',
+  ],
+  maintenance: [
+    'Mon PC ne démarre pas — diagnostic POST et codes BIOS',
+    'Comment récupérer des données d\'un disque dur défaillant ?',
+    'Explique les commandes DISM et SFC /scannow',
+    'Quelle pâte thermique et comment l\'appliquer sur un i7 ?',
+  ],
+  sciences: [
+    'Résous cette équation différentielle: y\'\' + 2y\' + y = e^(-t)',
+    'Calcule l\'impédance d\'un circuit RLC série à 1 kHz',
+    'Applique le simplexe à ce problème d\'optimisation linéaire',
+    'Explique la transformée de Laplace avec des exemples',
+  ],
+  programmation: [
+    'Implémente un arbre AVL en C++ avec toutes les rotations',
+    'Explique les monades en Haskell avec des exemples',
+    'Quelle est la complexité de cet algorithme et comment l\'optimiser ?',
+    'Implémente un tri fusion en Rust avec gestion d\'erreurs',
+  ],
+  strategie: [
+    'Quelle stratégie IA pour une startup en RDC avec budget limité ?',
+    'Comment intégrer Ollama dans une application existante ?',
+    'Analyse le marché cloud en Afrique centrale pour 2026',
+    'Blockchain pour les titres fonciers en RDC — est-ce viable ?',
+  ],
+  devops: [
+    'Crée un Dockerfile multi-stage optimisé pour une app Next.js',
+    'Configure un pipeline GitHub Actions avec tests et déploiement',
+    'Comment monitorer une app avec Prometheus et Grafana ?',
+    'Déploie une app avec Docker Compose sur Hetzner',
+  ],
+  security: [
+    'Audite ce code pour les failles OWASP Top 10',
+    'Comment implémenter l\'authentification Zero Trust ?',
+    'Explique les différences entre JWT, sessions, et OAuth 2.0',
+    'Génère une politique de sécurité pour une API REST',
+  ],
+  data: [
+    'Entraîne un modèle Random Forest en Python sur ce dataset',
+    'Crée un pipeline ETL avec pandas et SQLAlchemy',
+    'Comment fine-tuner un LLM avec LoRA sur mes données ?',
+    'Analyse ces données de ventes avec visualisations Python',
+  ],
+  business: [
+    'Analyse SWOT pour OMEDEV SERVICES SARL en 2026',
+    'Comment intégrer l\'API M-Pesa pour les paiements ?',
+    'Rédige un business plan pour une ESN à Kinshasa',
+    'Stratégie de pricing pour un SaaS B2B en Afrique centrale',
+  ],
+  agent: [
+    'Crée et exécute un script Python qui calcule des statistiques',
+    'Analyse ce code, identifie les bugs et corrige-les',
+    'Calcule le bilan de liaison RF puis explique le résultat',
+    'Génère un sous-réseau pour 192.168.0.0/16 avec 50 hôtes par réseau',
+  ],
 }
 
 export function ChatInterface() {
@@ -71,7 +176,7 @@ export function ChatInterface() {
     settings,
   } = useAppStore()
 
-  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
+  const [, setStreamingMessageId] = useState<string | null>(null)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -185,8 +290,6 @@ export function ChatInterface() {
               } else if (data.type === 'thinking') {
                 thinkingContent += data.content
               } else if (data.type === 'done') {
-                // Finalize message with token count
-                const tokenCount = estimateTokens(accumulatedContent)
                 finalizeStreamingMessage(convId!, assistantMsg.id)
 
                 // Update with thinking if present
@@ -270,7 +373,7 @@ export function ChatInterface() {
   if (!conversation || messages.length === 0) {
     const currentMode = (conversation?.mode || settings.defaultMode) as ConversationMode
     const modeConfig = CONVERSATION_MODES.find((m) => m.id === currentMode)
-    const suggestions = WELCOME_SUGGESTIONS[currentMode] || WELCOME_SUGGESTIONS.general
+    const suggestions = WELCOME_SUGGESTIONS[currentMode] || WELCOME_SUGGESTIONS.general || []
     const ModeIcon = MODE_ICONS[currentMode] || Bot
 
     return (
@@ -376,6 +479,7 @@ export function ChatInterface() {
       {!autoScroll && (
         <div className="absolute bottom-28 right-6">
           <button
+            type="button"
             onClick={() => {
               setAutoScroll(true)
               messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
