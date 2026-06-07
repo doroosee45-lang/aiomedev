@@ -118,7 +118,11 @@ router.get('/modes', (req, res) => {
       { id: 'analyst',       name: 'Analyste Stratégique',      icon: '📈', description: 'SWOT, modélisation financière, KPI, études de marché', color: '#A78BFA', category: 'business' },
       { id: 'legal',         name: 'Mode Juridique',            icon: '⚖️', description: 'Droit OHADA, RDC, contrats, fiscalité', color: '#FFD700', category: 'business' },
       { id: 'agent',         name: 'Agent Autonome',            icon: '🤖', description: 'Exécution autonome multi-étapes avec outils intégrés', color: '#FB923C', category: 'agent' },
-      { id: 'formation',     name: 'Mode Formation',            icon: '📚', description: 'Contenus pédagogiques structurés, modules, quiz', color: '#FF6B6B', category: 'education' }
+      { id: 'formation',     name: 'Mode Formation',            icon: '📚', description: 'Contenus pédagogiques structurés, modules, quiz', color: '#FF6B6B', category: 'education' },
+      { id: 'conception',    name: 'Conception Application',    icon: '🎨', description: 'Conçoit toute application: architecture, stack, schéma BDD, wireframes, API', color: '#00E5FF', category: 'conception' },
+      { id: 'cahier',        name: 'Cahier des Charges',        icon: '📋', description: 'Génère CDC complets professionnels — toutes sections, user stories, risques', color: '#B39DDB', category: 'conception' },
+      { id: 'architecture',  name: 'Architecture Logicielle',   icon: '🏗️', description: 'Patterns (C4, Clean, DDD, microservices), diagrammes ASCII, ADR', color: '#80DEEA', category: 'conception' },
+      { id: 'planification', name: 'Planification Projet',      icon: '📅', description: 'WBS, Gantt ASCII, sprints, backlog MoSCoW, analyse risques, métriques', color: '#A5D6A7', category: 'conception' }
     ]
   });
 });
