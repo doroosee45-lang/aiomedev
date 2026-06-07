@@ -14,27 +14,46 @@ interface CodeBlockProps {
 
 const LANGUAGE_LABELS: Record<string, string> = {
   javascript: 'JavaScript',
+  js: 'JavaScript',
   typescript: 'TypeScript',
+  ts: 'TypeScript',
+  tsx: 'TSX',
+  jsx: 'JSX',
   python: 'Python',
+  py: 'Python',
   java: 'Java',
   rust: 'Rust',
+  rs: 'Rust',
   go: 'Go',
   cpp: 'C++',
   c: 'C',
   csharp: 'C#',
+  cs: 'C#',
   php: 'PHP',
   ruby: 'Ruby',
+  rb: 'Ruby',
   swift: 'Swift',
   kotlin: 'Kotlin',
+  kt: 'Kotlin',
+  dart: 'Dart',
   sql: 'SQL',
   bash: 'Bash',
   sh: 'Shell',
   html: 'HTML',
   css: 'CSS',
+  scss: 'SCSS',
   json: 'JSON',
   yaml: 'YAML',
+  yml: 'YAML',
   markdown: 'Markdown',
+  md: 'Markdown',
   dockerfile: 'Dockerfile',
+  solidity: 'Solidity',
+  sol: 'Solidity',
+  vhdl: 'VHDL',
+  verilog: 'Verilog',
+  r: 'R',
+  matlab: 'MATLAB',
   text: 'Texte',
 }
 
@@ -76,12 +95,15 @@ export function CodeBlock({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // Fallback
+      // Fallback pour navigateurs sans clipboard API
       const textarea = document.createElement('textarea')
       textarea.value = code
+      textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none'
       document.body.appendChild(textarea)
+      textarea.focus()
       textarea.select()
-      document.execCommand('copy')
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
+      try { document.execCommand('copy') } catch { /* last resort */ }
       document.body.removeChild(textarea)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
@@ -215,15 +237,15 @@ export function CodeBlock({
       </div>
 
       {/* Code content */}
-      <div className="overflow-x-auto">
-        <pre className="p-4 text-sm leading-relaxed">
+      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <pre className="p-4 text-sm leading-relaxed min-w-max">
           <code>
             {showLineNumbers ? (
-              <table className="w-full border-collapse">
+              <table className="border-collapse">
                 <tbody>
                   {lines.map((line, i) => (
-                    <tr key={i} className="group">
-                      <td className="select-none pr-4 text-right text-muted-foreground/40 text-xs w-10 leading-relaxed border-r border-border/30 mr-4">
+                    <tr key={i} className="group hover:bg-white/[0.02]">
+                      <td className="select-none pr-4 text-right text-muted-foreground/40 text-xs w-10 leading-relaxed border-r border-border/30 sticky left-0 bg-transparent">
                         {i + 1}
                       </td>
                       <td className="pl-4 text-foreground/90 leading-relaxed whitespace-pre">
@@ -234,7 +256,7 @@ export function CodeBlock({
                 </tbody>
               </table>
             ) : (
-              <span className="text-foreground/90 whitespace-pre-wrap">{code}</span>
+              <span className="text-foreground/90 whitespace-pre">{code}</span>
             )}
           </code>
         </pre>
@@ -286,20 +308,6 @@ function SyntaxHighlight({ code, language }: { code: string; language: string })
     return <span className="text-foreground/90">{code}</span>
   }
 
-  // Simple token-based highlighting
-  const parts: React.ReactNode[] = []
-  let remaining = code
-  let key = 0
-
-  // String pattern
-  const patterns = [
-    { regex: /(["'`])(.*?)\1/g, className: 'text-green-300' },
-    { regex: /\/\/.*$/gm, className: 'text-muted-foreground italic' },
-    { regex: /#.*$/gm, className: 'text-muted-foreground italic' },
-    { regex: /\b(\d+\.?\d*)\b/g, className: 'text-yellow-300' },
-  ]
-
-  // Simple keyword highlighting
   const words = code.split(/(\s+|[{}()\[\].,;:=+\-*/<>!&|@#])/)
   return (
     <span>
